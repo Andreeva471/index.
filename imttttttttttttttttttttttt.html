@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#f97316">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Доктор Кот">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%23f97316'/%3E%3Ctext x='50' y='67' font-size='50' text-anchor='middle' fill='white'%3E🐱%3C/text%3E%3C/svg%3E">
+    <title>🐱 Доктор Кот — ИМТ и дневник калорий</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #e0f2fe 0%, #fae8ff 50%, #fef9c3 100%);
+            min-height: 100vh;
+            padding: 20px;
+            font-family: 'Segoe UI', system-ui, -apple-system, 'Comic Neue', sans-serif;
+        }
+
+        .container {
+            max-width: 750px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        /* ========== ПОСТОЯННАЯ ПОДСКАЗКА В УГЛУ ========== */
+        .help-corner {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        .help-icon {
+            background: #1e293b;
+            color: #facc15;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            transition: 0.2s;
+        }
+        .help-icon:hover {
+            transform: scale(1.05);
+            background: #f97316;
+            color: white;
+        }
+        .help-tooltip {
+            position: absolute;
+            bottom: 55px;
+            right: 0;
+            background: #0f172a;
+            color: #facc15;
+            padding: 12px 16px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            width: 220px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            display: none;
+            font-weight: normal;
+            line-height: 1.4;
+        }
+        .help-icon:hover + .help-tooltip, .help-tooltip:hover {
+            display: block;
+        }
+        .help-tooltip small {
+            color: #94a3b8;
+            display: block;
+            margin-top: 6px;
+        }
+
+        /* PWA баннер (кнопка установки) */
+        .install-banner {
+            background: #1e293b;
+            color: white;
+            border-radius: 60px;
+            padding: 10px 16px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            font-size: 0.85rem;
+        }
+        .install-banner button {
+            background: #facc15;
+            color: #1e293b;
+            border: none;
+            padding: 6px 16px;
+            border-radius: 40px;
+            font-weight: bold;
+            margin: 0;
+            box-shadow: none;
+            width: auto;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+        .hidden {
+            display: none;
+        }
+
+        .main-card {
+            background: rgba(255, 255, 255, 0.94);
+            backdrop-filter: blur(4px);
+            border-radius: 60px 60px 60px 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            padding: 25px 28px 35px;
+            margin-bottom: 25px;
+            border-left: 8px solid #f97316;
+        }
+
+        h1 {
+            font-size: 2rem;
+            text-align: center;
+            background: linear-gradient(120deg, #0891b2, #db2777, #7c3aed);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .age-badge {
+            background: #facc15;
+            padding: 6px 18px;
+            border-radius: 60px;
+            font-size: 0.85rem;
+            color: #2d1b00;
+            font-weight: bold;
+            display: inline-block;
+            margin: 0 auto 15px;
+            text-align: center;
+            width: fit-content;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            background: #fed7aa;
+            border: none;
+            padding: 8px 18px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: 0.2s;
+            color: #3b2a1f;
+        }
+        .tab-btn.active {
+            background: #f97316;
+            color: white;
+            transform: scale(1.02);
+            box-shadow: 0 2px 8px rgba(249,115,22,0.4);
+        }
+
+        .tab-pane {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        .tab-pane.active-pane {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px);}
+            to { opacity: 1; transform: translateY(0);}
+        }
+
+        .form-group {
+            margin-bottom: 14px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+            background: #fff9ef;
+            padding: 6px 15px;
+            border-radius: 60px;
+        }
+        .form-group label {
+            font-weight: bold;
+            width: 110px;
+            color: #a4411e;
+            font-size: 0.95rem;
+        }
+        .form-group input, .form-group select {
+            flex: 1;
+            padding: 10px 15px;
+            border-radius: 50px;
+            border: 2px solid #ffcd94;
+            font-size: 0.95rem;
+            font-family: inherit;
+            background: white;
+            outline: none;
+        }
+        button {
+            background: #f97316;
+            width: 100%;
+            padding: 14px;
+            border: none;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 60px;
+            color: white;
+            cursor: pointer;
+            margin: 12px 0;
+            font-family: inherit;
+            transition: 0.1s;
+        }
+        button:active { transform: scale(0.98); }
+
+        .result-box {
+            background: #fef9e3;
+            border-radius: 48px;
+            padding: 20px;
+            border-left: 6px solid #fbbf24;
+            margin-top: 10px;
+        }
+        .imt-number {
+            font-size: 2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #075985, #0c4a6e);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .diagnosis {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin: 10px 0 8px;
+        }
+        .advice {
+            background: #eef2ff;
+            padding: 14px 18px;
+            border-radius: 28px;
+            margin-top: 15px;
+            font-size: 0.95rem;
+            line-height: 1.45;
+            color: #1e1b4b;
+        }
+
+        /* Цветовые индикаторы для калорий */
+        .kcal-display {
+            background: #dbeafe;
+            padding: 12px;
+            border-radius: 40px;
+            text-align: center;
+            margin: 12px 0;
+            font-size: 1.3rem;
+            font-weight: bold;
+        }
+        .progress-container {
+            background: #e2e8f0;
+            border-radius: 30px;
+            height: 24px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            border-radius: 30px;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 8px;
+            color: white;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+        .progress-low { background: #22c55e; }
+        .progress-ok { background: #eab308; }
+        .progress-high { background: #ef4444; }
+        .food-entry {
+            display: flex;
+            gap: 8px;
+            margin: 12px 0;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .food-entry input {
+            flex: 2;
+            padding: 10px;
+            border-radius: 40px;
+            border: 1px solid #fcd34d;
+        }
+        .food-entry .kcal-input {
+            flex: 1;
+            min-width: 80px;
+        }
+        .food-entry button {
+            flex: 0.8;
+            margin: 0;
+            padding: 10px;
+            font-size: 0.9rem;
+        }
+        .food-list {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 12px;
+        }
+        .food-item {
+            background: white;
+            border-radius: 30px;
+            padding: 6px 12px;
+            margin: 6px 0;
+            display: flex;
+            justify-content: space-between;
+            border-left: 4px solid #f97316;
+        }
+        .reset-btn {
+            background: #64748b;
+            margin-top: 8px;
+            font-size: 0.9rem;
+        }
+
+        .cat-deco {
+            background: #fffbeb;
+            border-radius: 48px;
+            padding: 10px 18px;
+            text-align: center;
+            margin-top: 20px;
+            border: 2px solid #fcd34d;
+            font-size: 1.5rem;
+            letter-spacing: 6px;
+        }
+        footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #713f12;
+            font-weight: bold;
+            font-size: 0.7rem;
+        }
+        @media (max-width: 550px) {
+            .main-card { padding: 18px; }
+            .form-group label { width: 85px; font-size: 0.85rem; }
+            .help-corner { bottom: 10px; right: 10px; }
+            .help-icon { width: 40px; height: 40px; font-size: 20px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- ПОСТОЯННАЯ ПОДСКАЗКА В ПРАВОМ НИЖНЕМ УГЛУ -->
+    <div class="help-corner">
+        <div class="help-icon">❔</div>
+        <div class="help-tooltip">
+            📱 <strong>Как установить приложение?</strong><br>
+            • iPhone: нажмите «Поделиться» → «На экран «Домой»»<br>
+            • Android: нажмите ⋮ → «Установить приложение»<br>
+            <small>После установки иконка появится на телефоне</small>
+        </div>
+    </div>
+
+    <!-- PWA баннер с кнопкой установки (появляется когда можно установить) -->
+    <div id="installBanner" class="install-banner hidden">
+        <span>📱 Установите приложение Доктор Кот</span>
+        <button id="installBtn">🏠 Добавить на экран</button>
+    </div>
+
+    <div class="main-card">
+        <h1>🐱 Доктор Кот 🐱</h1>
+        <div style="text-align:center;">
+            <div class="age-badge">🐾 ИМТ + ДНЕВНИК КАЛОРИЙ 🐾</div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="kids">🧸 2–19 лет (ИМТ)</button>
+            <button class="tab-btn" data-tab="baby">🍼 0–2 года</button>
+            <button class="tab-btn" data-tab="kcal">🔥 ДНЕВНИК КАЛОРИЙ</button>
+        </div>
+
+        <!-- ИМТ 2-19 лет -->
+        <div id="kidsTab" class="tab-pane active-pane">
+            <div class="form-group"><label>📏 Рост (см)</label><input type="number" id="heightKids" placeholder="125" step="0.5" value="125"></div>
+            <div class="form-group"><label>⚖️ Вес (кг)</label><input type="number" id="weightKids" placeholder="25" step="0.1" value="25"></div>
+            <div class="form-group"><label>🎂 Возраст (лет)</label><input type="number" id="ageKids" placeholder="2-19" step="1" value="8" min="2" max="19"></div>
+            <div class="form-group"><label>⚧ Пол</label><select id="genderKids"><option value="female">👧 Девочка</option><option value="male">👦 Мальчик</option></select></div>
+            <button id="calcKidsBtn">🔍 РАССЧИТАТЬ ИМТ</button>
+            <div id="resultKids" class="result-box">✨ Введите данные</div>
+        </div>
+
+        <!-- 0-2 года -->
+        <div id="babyTab" class="tab-pane">
+            <div class="form-group"><label>📏 Рост (см)</label><input type="number" id="heightBaby" placeholder="76" step="0.5" value="76"></div>
+            <div class="form-group"><label>⚖️ Вес (кг)</label><input type="number" id="weightBaby" placeholder="9.2" step="0.1" value="9.2"></div>
+            <div class="form-group"><label>🍼 Возраст (мес)</label><input type="number" id="monthBaby" placeholder="0-24" step="1" value="12" min="0" max="24"></div>
+            <div class="form-group"><label>⚧ Пол</label><select id="genderBaby"><option value="female">👧 Девочка</option><option value="male">👦 Мальчик</option></select></div>
+            <button id="calcBabyBtn">🐣 ОЦЕНИТЬ РАЗВИТИЕ</button>
+            <div id="resultBaby" class="result-box">🍼 Данные для малышей</div>
+        </div>
+
+        <!-- ДНЕВНИК КАЛОРИЙ с прогрессом -->
+        <div id="kcalTab" class="tab-pane">
+            <div class="form-group"><label>🎂 Возраст (лет)</label><input type="number" id="kcalAge" placeholder="2-18" step="1" value="10"></div>
+            <div class="form-group"><label>⚧ Пол</label><select id="kcalGender"><option value="female">👧 Девочка</option><option value="male">👦 Мальчик</option></select></div>
+            <div class="form-group"><label>🏃 Активность</label><select id="kcalActivity"><option value="low">🛋️ Низкая</option><option value="normal" selected>🚶 Умеренная</option><option value="high">⚽ Высокая</option></select></div>
+            <div class="form-group"><label>📏 Рост (см)</label><input type="number" id="kcalHeight" placeholder="опционально" step="1"></div>
+            <div class="form-group"><label>⚖️ Вес (кг)</label><input type="number" id="kcalWeight" placeholder="опционально" step="0.5"></div>
+            <button id="calcKcalBtn">🍎 РАССЧИТАТЬ НОРМУ ККАЛ</button>
+            
+            <div id="kcalMainBox" class="result-box">
+                <div class="kcal-display" id="kcalDisplay">— ккал/день</div>
+                <div id="kcalAdvice"></div>
+                
+                <!-- Прогресс-бар -->
+                <div class="progress-container">
+                    <div id="progressFill" class="progress-bar progress-low" style="width:0%">0%</div>
+                </div>
+                <div id="eatenInfo" style="text-align:center; font-size:0.9rem;">🍽️ Сегодня съедено: 0 ккал</div>
+                
+                <!-- Добавить еду -->
+                <div class="food-entry">
+                    <input type="text" id="foodName" placeholder="Что съели? (пицца, яблоко...)" autocomplete="off">
+                    <input type="number" id="foodKcal" class="kcal-input" placeholder="ккал" step="10">
+                    <button id="addFoodBtn">➕ Добавить</button>
+                </div>
+                
+                <!-- Список съеденного -->
+                <div id="foodList" class="food-list"></div>
+                <button id="resetDayBtn" class="reset-btn">🗑️ Сбросить сегодняшний день</button>
+            </div>
+        </div>
+
+        <div class="cat-deco">🐱 😺 🐈 🐾 🐈‍⬛</div>
+    </div>
+    <footer>⚕️ Перцентили ВОЗ/CDC. Дневник калорий сохраняется в телефоне.</footer>
+</div>
+
+<script>
+    // -------------------- PWA УСТАНОВКА --------------------
+    let deferredPrompt;
+    const installBanner = document.getElementById('installBanner');
+    const installBtn = document.getElementById('installBtn');
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        installBanner.classList.remove('hidden');
+    });
+    installBtn.addEventListener('click', async () => {
+        if (deferredPrompt) { 
+            deferredPrompt.prompt(); 
+            const { outcome } = await deferredPrompt.userChoice; 
+            if (outcome === 'accepted') installBanner.classList.add('hidden'); 
+            deferredPrompt = null; 
+        }
+    });
+
+    // -------------------- ИМТ 2-19 ЛЕТ --------------------
+    function getThresholds(ageYears, gender) {
+        let age = Math.min(19, Math.max(2, Math.floor(ageYears))), idx = age - 2;
+        if (idx < 0) idx = 0; if (idx > 17) idx = 17;
+        const fP5=[14.2,13.8,13.6,13.5,13.7,14.0,14.4,14.9,15.3,15.8,16.3,16.8,17.2,17.6,18.0,18.3,18.5,18.7];
+        const fP85=[17.5,17.2,17.1,17.2,17.6,18.1,18.7,19.3,20.0,20.7,21.4,22.0,22.6,23.0,23.4,23.7,23.9,24.0];
+        const fP95=[19.3,19.0,18.9,19.0,19.5,20.1,20.9,21.8,22.8,23.8,24.7,25.5,26.2,26.8,27.2,27.6,27.9,28.1];
+        const mP5=[14.0,13.7,13.6,13.6,13.8,14.1,14.5,14.9,15.3,15.8,16.2,16.7,17.1,17.5,17.9,18.2,18.5,18.7];
+        const mP85=[17.3,17.0,16.9,17.0,17.3,17.8,18.4,19.0,19.6,20.2,20.9,21.5,22.1,22.6,23.0,23.3,23.6,23.8];
+        const mP95=[19.1,18.9,18.8,19.0,19.4,20.0,20.8,21.6,22.5,23.4,24.2,25.0,25.7,26.3,26.8,27.2,27.5,27.7];
+        return gender==='female' ? {p5:fP5[idx], p85:fP85[idx], p95:fP95[idx]} : {p5:mP5[idx], p85:mP85[idx], p95:mP95[idx]};
+    }
+    function interpretKidsBMI(bmi,p5,p85,p95) {
+        if(bmi<p5) return {status:"🔻 Дефицит массы тела", color:"#f59e0b", recommendation:"Рекомендуется консультация педиатра и диетолога. Увеличьте калорийность за счёт полезных продуктов."};
+        if(bmi<p85) return {status:"✅ Нормальная масса тела", color:"#10b981", recommendation:"Отлично! Продолжайте сбалансированное питание и активный образ жизни."};
+        if(bmi<p95) return {status:"⚠️ Избыточная масса тела", color:"#f97316", recommendation:"Повышен риск. Сократите сладкое, увеличьте активность до 60 минут в день."};
+        return {status:"🟠 Ожирение", color:"#dc2626", recommendation:"Требуется наблюдение педиатра. Постепенные изменения питания и поддержка семьи."};
+    }
+    function calculateKids() {
+        let h=parseFloat(document.getElementById('heightKids').value), w=parseFloat(document.getElementById('weightKids').value);
+        let a=parseFloat(document.getElementById('ageKids').value), g=document.getElementById('genderKids').value;
+        if(isNaN(h)||isNaN(w)||isNaN(a)||h<=0||w<=0||a<2||a>19) { document.getElementById('resultKids').innerHTML='<div style="color:#b91c1c;">⚠️ Ошибка данных</div>'; return; }
+        let bmi=Math.round((w/((h/100)**2))*10)/10, thr=getThresholds(a,g), interp=interpretKidsBMI(bmi,thr.p5,thr.p85,thr.p95);
+        document.getElementById('resultKids').innerHTML=`<div><span class="imt-number">ИМТ = ${bmi}</span> кг/м²</div><div class="diagnosis" style="color:${interp.color};">${interp.status}</div><div>🔹 Нормы: 5-й ${thr.p5} | 85-й ${thr.p85} | 95-й ${thr.p95}</div><div class="advice">💡 ${interp.recommendation}</div>`;
+    }
+
+    // -------------------- 0-2 ГОДА --------------------
+    function assessBaby(w,h,m,g) {
+        let nwl,nwh,nhl,nhh;
+        if(g==='female') {
+            if(m<=6){ nwl=3.2+m*0.5; nwh=4.8+m*0.65; nhl=50+m*1.5; nhh=55+m*1.8; }
+            else if(m<=12){ nwl=6+(m-6)*0.35; nwh=8.5+(m-6)*0.45; nhl=64+(m-6)*1.3; nhh=70+(m-6)*1.5; }
+            else{ nwl=8+(m-12)*0.25; nwh=10.8+(m-12)*0.35; nhl=74+(m-12)*0.7; nhh=82+(m-12)*0.9; }
+        } else {
+            if(m<=6){ nwl=3.3+m*0.55; nwh=5+m*0.7; nhl=51+m*1.5; nhh=56+m*1.8; }
+            else if(m<=12){ nwl=6.2+(m-6)*0.4; nwh=8.8+(m-6)*0.5; nhl=65+(m-6)*1.3; nhh=72+(m-6)*1.5; }
+            else{ nwl=8.3+(m-12)*0.28; nwh=11.2+(m-12)*0.38; nhl=75+(m-12)*0.7; nhh=83+(m-12)*0.9; }
+        }
+        let ws=w<nwl?"🔻 Вес ниже нормы":(w>nwh?"⚠️ Вес выше нормы":"✅ Вес в норме");
+        let hs=h<nhl?"📏 Рост ниже среднего":(h>nhh?"📏 Рост выше среднего":"📏 Рост в норме");
+        let rec=w<nwl?"Частое кормление по требованию, консультация педиатра.":(w>nwh?"Обсудите режим кормления с врачом.":"Отличные показатели!");
+        return {ws,hs,rec,nwl:nwl.toFixed(1),nwh:nwh.toFixed(1),nhl:nhl.toFixed(1),nhh:nhh.toFixed(1)};
+    }
+    function calculateBaby() {
+        let h=parseFloat(document.getElementById('heightBaby').value), w=parseFloat(document.getElementById('weightBaby').value);
+        let m=parseFloat(document.getElementById('monthBaby').value), g=document.getElementById('genderBaby').value;
+        if(isNaN(h)||isNaN(w)||isNaN(m)||h<=0||w<=0||m<0||m>24) { document.getElementById('resultBaby').innerHTML='<div style="color:#b91c1c;">❌ Ошибка</div>'; return; }
+        let a=assessBaby(w,h,m,g);
+        document.getElementById('resultBaby').innerHTML=`<div>👶 ${g==='female'?'Девочка':'Мальчик'}, ${m} мес</div><div>Вес ${w} кг — ${a.ws}</div><div>Рост ${h} см — ${a.hs}</div><div>📊 Норма веса: ${a.nwl}–${a.nwh} кг | Рост: ${a.nhl}–${a.nhh} см</div><div class="advice">🩺 ${a.rec}</div>`;
+    }
+
+    // -------------------- ДНЕВНИК КАЛОРИЙ + ПРОГРЕСС --------------------
+    let currentKcalNorm = 1800;
+    let todayEaten = 0;
+    let foodEntries = [];
+
+    function loadFoodData() {
+        let saved = localStorage.getItem('foodDiary');
+        if(saved) {
+            let data = JSON.parse(saved);
+            if(data.date === new Date().toDateString()) {
+                todayEaten = data.todayEaten;
+                foodEntries = data.entries;
+            } else {
+                todayEaten = 0;
+                foodEntries = [];
+                saveFoodData();
+            }
+        } else { todayEaten = 0; foodEntries = []; saveFoodData(); }
+        updateProgressDisplay();
+    }
+    function saveFoodData() {
+        let data = { date: new Date().toDateString(), todayEaten: todayEaten, entries: foodEntries };
+        localStorage.setItem('foodDiary', JSON.stringify(data));
+    }
+    function updateProgressDisplay() {
+        let percent = (todayEaten / currentKcalNorm) * 100;
+        if(percent > 100) percent = 100;
+        let progressFill = document.getElementById('progressFill');
+        progressFill.style.width = percent + '%';
+        progressFill.textContent = Math.round(percent) + '%';
+        if(percent < 70) { progressFill.className = 'progress-bar progress-low'; }
+        else if(percent <= 100) { progressFill.className = 'progress-bar progress-ok'; }
+        else { progressFill.className = 'progress-bar progress-high'; }
+        document.getElementById('eatenInfo').innerHTML = `🍽️ Сегодня съедено: ${todayEaten} из ${currentKcalNorm} ккал (${Math.round(percent)}%)`;
+        renderFoodList();
+    }
+    function renderFoodList() {
+        let container = document.getElementById('foodList');
+        if(foodEntries.length === 0) { container.innerHTML = '<div style="text-align:center; color:#aaa;">✨ Добавьте первый приём пищи</div>'; return; }
+        container.innerHTML = foodEntries.map((entry, idx) => `<div class="food-item"><span>${entry.name}</span><span>${entry.kcal} ккал <button style="background:#ef4444;padding:2px 10px;margin-left:8px;width:auto;border-radius:30px;" onclick="removeFoodEntry(${idx})">✖</button></span></div>`).join('');
+    }
+    window.removeFoodEntry = function(idx) {
+        todayEaten -= foodEntries[idx].kcal;
+        if(todayEaten < 0) todayEaten = 0;
+        foodEntries.splice(idx,1);
+        saveFoodData();
+        updateProgressDisplay();
+    };
+    function addFood() {
+        let name = document.getElementById('foodName').value.trim();
+        let kcal = parseInt(document.getElementById('foodKcal').value);
+        if(!name || isNaN(kcal) || kcal <= 0) { alert('Введите название и калории!'); return; }
+        foodEntries.push({ name, kcal });
+        todayEaten += kcal;
+        saveFoodData();
+        updateProgressDisplay();
+        document.getElementById('foodName').value = '';
+        document.getElementById('foodKcal').value = '';
+    }
+    function resetDay() {
+        if(confirm('Сбросить все записи за сегодня?')) {
+            todayEaten = 0;
+            foodEntries = [];
+            saveFoodData();
+            updateProgressDisplay();
+        }
+    }
+    function calculateKcalNorm() {
+        let age = parseFloat(document.getElementById('kcalAge').value);
+        let gender = document.getElementById('kcalGender').value;
+        let activity = document.getElementById('kcalActivity').value;
+        let height = parseFloat(document.getElementById('kcalHeight').value);
+        let weight = parseFloat(document.getElementById('kcalWeight').value);
+        if(isNaN(age) || age<2 || age>18) { document.getElementById('kcalDisplay').innerHTML = '⚠️ Возраст 2-18 лет'; return; }
+        let bmr;
+        if(!isNaN(weight) && !isNaN(height) && weight>0 && height>0) {
+            if(gender==='female') bmr = 10*weight + 6.25*height - 5*age - 161;
+            else bmr = 10*weight + 6.25*height - 5*age + 5;
+        } else {
+            if(age<=3) bmr = gender==='female'?950:1000;
+            else if(age<=6) bmr = gender==='female'?1150:1200;
+            else if(age<=9) bmr = gender==='female'?1350:1400;
+            else if(age<=12) bmr = gender==='female'?1600:1700;
+            else if(age<=15) bmr = gender==='female'?1800:2000;
+            else bmr = gender==='female'?1900:2200;
+        }
+        let factor = activity==='low'?1.2:(activity==='normal'?1.4:1.6);
+        currentKcalNorm = Math.round(bmr * factor);
+        document.getElementById('kcalDisplay').innerHTML = `🍽️ Норма: ${currentKcalNorm} ккал/день`;
+        // Убираем надпись "Отличный баланс" — оставляем пустой совет
+        document.getElementById('kcalAdvice').innerHTML = '';
+        updateProgressDisplay();
+        localStorage.setItem('kcalNorm', currentKcalNorm);
+    }
+
+    function restoreKcalNorm() {
+        let savedNorm = localStorage.getItem('kcalNorm');
+        if(savedNorm) { currentKcalNorm = parseInt(savedNorm); document.getElementById('kcalDisplay').innerHTML = `🍽️ Норма: ${currentKcalNorm} ккал/день`; }
+        else calculateKcalNorm();
+        updateProgressDisplay();
+    }
+
+    // Обработчики
+    document.getElementById('calcKidsBtn').addEventListener('click', calculateKids);
+    document.getElementById('calcBabyBtn').addEventListener('click', calculateBaby);
+    document.getElementById('calcKcalBtn').addEventListener('click', () => { calculateKcalNorm(); });
+    document.getElementById('addFoodBtn').addEventListener('click', addFood);
+    document.getElementById('resetDayBtn').addEventListener('click', resetDay);
+    
+    // Вкладки
+    const tabs = document.querySelectorAll('.tab-btn');
+    tabs.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tabId = btn.getAttribute('data-tab');
+            tabs.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active-pane'));
+            if(tabId === 'kids') document.getElementById('kidsTab').classList.add('active-pane');
+            if(tabId === 'baby') document.getElementById('babyTab').classList.add('active-pane');
+            if(tabId === 'kcal') document.getElementById('kcalTab').classList.add('active-pane');
+        });
+    });
+    
+    window.addEventListener('DOMContentLoaded', () => {
+        calculateKids(); calculateBaby(); loadFoodData(); restoreKcalNorm();
+    });
+</script>
+</body>
+</html>
